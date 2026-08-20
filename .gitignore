@@ -1,0 +1,15 @@
+# Swift Package Manager build products and workspace state
+.build/
+.swiftpm/
+
+# Locally packaged application output
+/build/
+
+# Xcode user-specific state when the package is opened in Xcode
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+/DerivedData/
+
+# Finder metadata
+.DS_Store
