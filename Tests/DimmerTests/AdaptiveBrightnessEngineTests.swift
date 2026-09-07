@@ -173,6 +173,21 @@ struct AdaptiveBrightnessEngineTests {
     }
 
     @Test
+    func oneShotPreparationAppliesCalculatedTargetImmediately() {
+        var engine = AdaptiveBrightnessEngine()
+        let settings = preferences(preferredBrightness: 0.60)
+
+        engine.prepareForImmediateApplication(currentBrightness: 1)
+        let result = engine.evaluate(
+            input(ScreenStatistics.uniform(1), currentEffectiveBrightness: 1, at: start),
+            preferences: settings
+        )
+
+        #expect(abs(result.targetBrightness - result.calculatedBrightness) < 0.000_001)
+        #expect(result.shouldApplyBrightness)
+    }
+
+    @Test
     func manualOverrideTemporarilyPausesAdaptiveChanges() {
         var engine = AdaptiveBrightnessEngine()
         let setting = preferences(manualOverrideDuration: 10)

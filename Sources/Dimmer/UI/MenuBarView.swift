@@ -155,11 +155,14 @@ struct MenuBarView: View {
             SettingsLink {
                 Text("Settings")
             }
-            if case .failed = model.captureStatus {
-                Button("Retry") {
-                    model.retryCapture()
-                }
+            Button("Apply Once") {
+                model.applyOnce()
             }
+            .disabled(!model.preferences.isEnabled)
+            Button("Start Updates") {
+                model.startContinuousUpdates()
+            }
+            .disabled(!model.preferences.isEnabled)
             Button("Debug") {
                 model.isShowingDebugPanel = true
             }

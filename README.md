@@ -1,9 +1,10 @@
 # Dimmer
 
-Dimmer is a native macOS menu-bar utility that locally analyzes a small,
-downsampled stream of the built-in display and gently adapts perceived
-brightness to the visible content. It targets macOS 14+ and uses SwiftUI,
-AppKit, Core Graphics, and ScreenCaptureKit with no third-party dependencies.
+Dimmer is a macOS companion for the included Raycast extension. It locally
+analyzes one small, downsampled sample of the built-in display, applies the
+resulting effective brightness, then releases the capture stream. It targets
+macOS 14+ and uses SwiftUI, AppKit, Core Graphics, and ScreenCaptureKit with
+no third-party dependencies.
 
 ## Important capability result
 
@@ -19,7 +20,28 @@ abstraction keeps a future public native controller isolated from the rest of
 the app. In this fallback, the target and min/max controls describe Dimmer's
 **effective overlay level**, not a physical panel-backlight percentage.
 
-## Run it
+## Use it with Raycast
+
+1. Build and install the companion application in `/Applications`:
+
+   ```bash
+   bash Scripts/build-app.sh
+   cp -R build/Dimmer.app /Applications/Dimmer.app
+   open /Applications/Dimmer.app
+   ```
+
+2. In Dimmer's menu bar panel, grant Screen Recording access and leave
+   **Adaptive Brightness** enabled.
+3. Install the development extension from `raycast-extension` using
+   `npm install` then `npm run dev`. Run **Apply Adaptive Brightness** in
+   Raycast whenever you want a fresh adjustment.
+
+Raycast opens `dimmer://apply-once`. Dimmer captures one low-resolution frame,
+converts it to numeric statistics, applies the result, and immediately stops
+ScreenCaptureKit. The applied overlay remains active; no periodic capture runs
+unless you explicitly choose **Start Updates** from the menu bar.
+
+## Run the companion directly
 
 Build the local application bundle so macOS receives the Screen Recording usage
 description:
@@ -37,9 +59,10 @@ swift run Dimmer
 
 The first time you enable adaptive analysis, select **Grant Screen Recording
 Access** in the menu-bar panel. macOS may require relaunching the app after you
-grant access. The capture stream is local-only: Dimmer immediately converts each
-low-resolution frame into numeric statistics and never writes or uploads image
-data.
+grant access. Use **Apply Once** for the battery-friendly behavior or **Start
+Updates** for the optional continuous mode. The capture stream is local-only:
+Dimmer immediately converts each low-resolution frame into numeric statistics
+and never writes or uploads image data.
 
 ## Adaptive model
 
@@ -75,8 +98,9 @@ provider protocol is ready for a future supported source.
   brightness state is stored per Space.
 - `CGDisplayRegisterReconfigurationCallback` restarts capture/repositions the
   fallback when displays change.
-- Capture output is limited to a low-resolution SDR BGRA stream and analysis
-  slows while content is stable.
+- Raycast's one-shot command releases capture immediately after its first
+  low-resolution SDR BGRA analysis; the optional continuous mode slows its
+  analysis while content is stable.
 - The fallback overlay ignores mouse events, does not accept focus, and the
   capture filter excludes Dimmer itself to avoid feedback.
 - The fallback cannot guarantee exclusion from every third-party screenshot
