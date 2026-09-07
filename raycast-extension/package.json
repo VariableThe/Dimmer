@@ -1,0 +1,47 @@
+{
+  "name": "dimmer",
+  "version": "0.2.0",
+  "description": "Apply a one-shot, content-aware Dimmer adjustment",
+  "main": "src/apply-adaptive-brightness.ts",
+  "type": "module",
+  "title": "Dimmer",
+  "icon": "dimmer.png",
+  "author": "VariableThe",
+  "license": "MIT",
+  "categories": [
+    "Productivity"
+  ],
+  "platforms": [
+    "macOS"
+  ],
+  "commands": [
+    {
+      "name": "apply-adaptive-brightness",
+      "title": "Apply Adaptive Brightness",
+      "subtitle": "Dimmer",
+      "description": "Sample once, apply Dimmer's effective brightness, and stop capturing",
+      "mode": "no-view",
+      "keywords": [
+        "brightness",
+        "screen",
+        "battery",
+        "dimmer"
+      ]
+    }
+  ],
+  "scripts": {
+    "build": "ray build",
+    "dev": "ray develop",
+    "lint": "ray lint"
+  },
+  "dependencies": {
+    "@raycast/api": "^1.102.0"
+  },
+  "devDependencies": {
+    "@raycast/eslint-config": "^2.0.0",
+    "@types/node": "^24.0.0",
+    "eslint": "^9.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0"
+  }
+}

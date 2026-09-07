@@ -34,3 +34,27 @@ jobs:
 
       - name: Test
         run: swift test --parallel
+
+  raycast-extension:
+    name: Build Raycast extension
+    runs-on: macos-15
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: raycast-extension/package-lock.json
+
+      - name: Install locked dependencies
+        working-directory: raycast-extension
+        run: npm ci
+
+      - name: Build extension
+        working-directory: raycast-extension
+        run: npm run build

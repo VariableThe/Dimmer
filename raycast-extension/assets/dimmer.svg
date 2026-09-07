@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Dimmer">
+  <rect width="512" height="512" rx="112" fill="#10141f"/>
+  <circle cx="256" cy="256" r="108" fill="#f6c945"/>
+  <circle cx="303" cy="210" r="92" fill="#10141f"/>
+  <path d="M256 73v38M256 401v38M73 256h38M401 256h38M127 127l27 27M358 358l27 27M385 127l-27 27M154 358l-27 27" stroke="#f6c945" stroke-width="25" stroke-linecap="round"/>
+</svg>

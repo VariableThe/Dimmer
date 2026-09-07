@@ -13,3 +13,7 @@ xcuserdata/
 
 # Finder metadata
 .DS_Store
+
+# Raycast extension dependencies and generated development declarations
+**/node_modules/
+/raycast-extension/raycast-env.d.ts

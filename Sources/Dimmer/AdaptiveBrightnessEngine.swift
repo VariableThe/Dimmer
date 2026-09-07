@@ -62,6 +62,17 @@ struct AdaptiveBrightnessEngine: Sendable {
         manualOverride = nil
     }
 
+    /// Seeds the temporal state so a deliberate, one-shot request applies the
+    /// calculated target in a single evaluation. Continuous capture retains
+    /// the normal smoothing and rate limits; callers use this only when a
+    /// person explicitly asks Dimmer to sample the screen once.
+    mutating func prepareForImmediateApplication(currentBrightness: Double) {
+        acceptedBrightness = nil
+        filteredBrightness = unitInterval(currentBrightness)
+        lastTimestamp = .distantPast
+        manualOverride = nil
+    }
+
     mutating func evaluate(
         _ input: AdaptiveBrightnessInput,
         preferences: AdaptiveBrightnessPreferences

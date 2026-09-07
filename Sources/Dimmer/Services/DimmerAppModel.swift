@@ -16,6 +16,12 @@ struct DebugHistorySample: Identifiable, Equatable {
 /// permissions, and menu-bar UI. It retains only numerical analysis results.
 @MainActor
 final class DimmerAppModel: ObservableObject {
+    private enum CaptureIntent: Equatable {
+        case none
+        case continuous
+        case oneShot
+    }
+
     @Published private(set) var preferences: AdaptiveBrightnessPreferences
     @Published private(set) var builtInDisplay: DisplayInfo?
     @Published private(set) var displays: [DisplayInfo] = []
@@ -36,6 +42,7 @@ final class DimmerAppModel: ObservableObject {
     private let brightnessController: FallbackBrightnessController
     private var engine = AdaptiveBrightnessEngine()
     private var hasStarted = false
+    private var captureIntent: CaptureIntent = .none
     private var workspaceObserver: NSObjectProtocol?
     private var activationObserver: NSObjectProtocol?
     private var terminationObserver: NSObjectProtocol?
@@ -136,12 +143,12 @@ final class DimmerAppModel: ObservableObject {
         let previouslyGranted = hasScreenRecordingPermission
         permissionManager.refresh()
         hasScreenRecordingPermission = permissionManager.hasScreenRecordingPermission
-        if hasScreenRecordingPermission, preferences.isEnabled {
+        if hasScreenRecordingPermission, preferences.isEnabled, captureIntent != .none {
             let captureIsRunning = captureStatus == .capturing || captureStatus == .starting
             if !previouslyGranted || !captureIsRunning {
                 startCaptureIfPossible()
             }
-        } else if !hasScreenRecordingPermission, preferences.isEnabled {
+        } else if !hasScreenRecordingPermission, preferences.isEnabled, captureIntent != .none {
             captureManager.stop()
             restoreNormalDisplay()
             captureStatus = .needsScreenRecordingPermission
@@ -165,7 +172,35 @@ final class DimmerAppModel: ObservableObject {
             captureStatus = .needsScreenRecordingPermission
             return
         }
+        captureIntent = .continuous
         startCaptureIfPossible()
+    }
+
+    /// Starts the existing continuous menu-bar behavior. It is opt-in after
+    /// launch so the Raycast workflow does not consume capture resources in
+    /// the background.
+    func startContinuousUpdates() {
+        guard preferences.isEnabled else { return }
+        captureIntent = .continuous
+        refreshPermissions()
+    }
+
+    /// Performs exactly one privacy-preserving screen analysis and leaves the
+    /// calculated effective brightness applied after the capture stream stops.
+    /// This is the target of the Raycast deep link.
+    func applyOnce() {
+        guard preferences.isEnabled else {
+            lastError = "Turn on Adaptive Brightness in Dimmer before applying a one-shot adjustment."
+            return
+        }
+        if !hasStarted {
+            start()
+        }
+        latestAnalysis = nil
+        latestDecision = nil
+        engine.reset()
+        captureIntent = .oneShot
+        refreshPermissions()
     }
 
     func updatePreferences(_ update: (inout AdaptiveBrightnessPreferences) -> Void) {
@@ -177,8 +212,9 @@ final class DimmerAppModel: ObservableObject {
 
         if wasEnabled != preferences.isEnabled {
             if preferences.isEnabled {
-                startCaptureIfPossible()
+                startContinuousUpdates()
             } else {
+                captureIntent = .none
                 captureManager.stop()
                 restoreNormalDisplay()
             }
@@ -243,7 +279,7 @@ final class DimmerAppModel: ObservableObject {
     }
 
     private func startCaptureIfPossible(preservingEffectiveBrightness: Bool = false) {
-        guard hasStarted, preferences.isEnabled else { return }
+        guard hasStarted, preferences.isEnabled, captureIntent != .none else { return }
         guard hasScreenRecordingPermission else {
             captureStatus = .needsScreenRecordingPermission
             restoreNormalDisplay()
@@ -277,7 +313,17 @@ final class DimmerAppModel: ObservableObject {
 
     private func receive(_ analysis: FrameAnalysis) {
         latestAnalysis = analysis
+        if captureIntent == .oneShot {
+            let currentBrightness = brightnessController.currentEffectiveBrightness() ?? appliedBrightness ?? 1
+            engine.prepareForImmediateApplication(currentBrightness: currentBrightness)
+        }
         evaluateLatestFrameIfPossible()
+        if captureIntent == .oneShot {
+            captureIntent = .none
+            // Keep the applied overlay alive, but release ScreenCaptureKit as
+            // soon as this one numerical analysis has been consumed.
+            captureManager.stop()
+        }
     }
 
     private func evaluateLatestFrameIfPossible() {
@@ -327,7 +373,9 @@ final class DimmerAppModel: ObservableObject {
         latestAnalysis = nil
         captureManager.stop()
         restoreNormalDisplay()
-        startCaptureIfPossible()
+        if captureIntent != .none {
+            startCaptureIfPossible()
+        }
     }
 
     private func handleCaptureStatusChanged(_ status: ScreenCaptureStatus) {
@@ -337,6 +385,7 @@ final class DimmerAppModel: ObservableObject {
         }
         captureStatus = status
         guard case let .failed(message) = status else { return }
+        captureIntent = .none
         lastError = message
         // A capture failure must not strand the person behind an automatic
         // fallback overlay. They can explicitly retry from the menu panel.
